@@ -1,5 +1,5 @@
 import React from 'react';
-import RandomPathGenerator from './RandomPathGenerator';
+import RandomPathGenerator from './components/RandomPathGenerator';
 
 function App() {
   return (
