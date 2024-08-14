@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Controls from './Controls';
 import { generateFluidPath, createFluidPathGeometry, smoothPath } from '../utils/fluidPathGenerator';
 import { getPathByName, getPathNames } from '../assets/svgPaths';
+import { getRandomGradient, getGradientByName, getAllGradientNames } from '../utils/gradients';
 
 const A4_RATIO = 210 / 297; // Width / Height for portrait orientation
 
@@ -20,8 +21,7 @@ const RandomPathGenerator = () => {
   const [rotation, setRotation] = useState(0);
   const [randomSeed, setRandomSeed] = useState(Math.random());
   const [smoothness, setSmoothness] = useState(1);
-
-  const colors = ['#008967', '#2458d4', '#eb4836', '#f3b2d1', '#f4bb54', '#ea4b36'];
+  const [selectedGradient, setSelectedGradient] = useState(getRandomGradient().name);
 
   const renderScene = useCallback(() => {
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -80,10 +80,13 @@ const RandomPathGenerator = () => {
     return cleanup;
   }, [setup]);
 
-  const createGradientMaterial = useCallback((colors) => {
+  const createGradientMaterial = useCallback((gradientName) => {
+    const gradient = getGradientByName(gradientName);
+    const colors = gradient.colors.map(color => new THREE.Color(color));
+
     return new THREE.ShaderMaterial({
       uniforms: {
-        colors: { value: colors.map(color => new THREE.Color(color)) },
+        colors: { value: colors },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -115,7 +118,7 @@ const RandomPathGenerator = () => {
     });
   }, []);
 
-  const createSolidColorMaterial = useCallback((color) => {
+  const createColorShaderMaterial = useCallback((color) => {
     return new THREE.ShaderMaterial({
       uniforms: {
         color: { value: new THREE.Color(color) },
@@ -129,12 +132,10 @@ const RandomPathGenerator = () => {
       `,
       fragmentShader: `
         uniform vec3 color;
-        varying vec3 vNormal;
         void main() {
           gl_FragColor = vec4(color, 1.0);
         }
       `,
-      side: THREE.FrontSide,
     });
   }, []);
 
@@ -151,21 +152,25 @@ const RandomPathGenerator = () => {
     const fluidPoints = generateFluidPath(svgPath, 200, noiseScale, randomSeed);
     const smoothedPoints = smoothPath(fluidPoints, smoothness);
     const geometry = createFluidPathGeometry(smoothedPoints, lineWidth);
-    const gradientMaterial = createGradientMaterial(colors);
+    const gradientMaterial = createGradientMaterial(selectedGradient);
 
     const tubeMesh = new THREE.Mesh(geometry, gradientMaterial);
 
-    const sphereGeometry = new THREE.SphereGeometry(lineWidth / 2, 16, 16);
-    
-    const startSphereMaterial = createSolidColorMaterial(colors[0]);
-    const endSphereMaterial = createSolidColorMaterial(colors[colors.length - 1]);
-    
-    const startSphere = new THREE.Mesh(sphereGeometry, startSphereMaterial);
-    const endSphere = new THREE.Mesh(sphereGeometry, endSphereMaterial);
+    const gradient = getGradientByName(selectedGradient);
+    const startColor = gradient.colors[0];
+    const endColor = gradient.colors[gradient.colors.length - 1];
+
+    const createColoredSphere = (color, position) => {
+      const sphereGeometry = new THREE.SphereGeometry(lineWidth / 2, 32, 32);
+      const sphereMaterial = createColorShaderMaterial(color);
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.copy(position);
+      return sphere;
+    };
 
     const curve = new THREE.CatmullRomCurve3(smoothedPoints);
-    startSphere.position.copy(curve.getPointAt(0));
-    endSphere.position.copy(curve.getPointAt(1));
+    const startSphere = createColoredSphere(startColor, curve.getPointAt(0));
+    const endSphere = createColoredSphere(endColor, curve.getPointAt(1));
 
     const pathGroup = new THREE.Group();
     pathGroup.add(tubeMesh);
@@ -178,7 +183,7 @@ const RandomPathGenerator = () => {
 
     pathRef.current = pathGroup;
     renderScene();
-  }, [selectedPath, noiseScale, scale, lineWidth, rotation, randomSeed, smoothness, colors, createGradientMaterial, createSolidColorMaterial, renderScene]);
+  }, [selectedPath, noiseScale, scale, lineWidth, rotation, randomSeed, smoothness, selectedGradient, createGradientMaterial, createColorShaderMaterial, renderScene]);
 
   useEffect(() => {
     if (sceneRef.current && cameraRef.current && rendererRef.current) {
@@ -186,8 +191,9 @@ const RandomPathGenerator = () => {
     }
   }, [generateFluidPathMesh]);
 
-  const randomizePath = () => {
+  const randomizeAll = () => {
     setRandomSeed(Math.random());
+    setSelectedGradient(getRandomGradient().name);
   };
 
   return (
@@ -210,7 +216,10 @@ const RandomPathGenerator = () => {
           setRotation={setRotation}
           smoothness={smoothness}
           setSmoothness={setSmoothness}
-          onRandomize={randomizePath}
+          selectedGradient={selectedGradient}
+          setSelectedGradient={setSelectedGradient}
+          gradientNames={getAllGradientNames()}
+          onRandomize={randomizeAll}
           onRegenerate={generateFluidPathMesh}
         />
       </div>
