@@ -18,7 +18,8 @@ const Controls = ({
   setSelectedGradient,
   gradientNames,
   onRandomize,
-  onRegenerate
+  onRegenerate,
+  onRandomizeScaleLineWidthRotation
 }) => {
   return (
     <div style={styles.container}>
@@ -122,6 +123,9 @@ const Controls = ({
         <button onClick={onRegenerate} style={styles.button}>
           Regenerate Path
         </button>
+        <button onClick={onRandomizeScaleLineWidthRotation} style={styles.button}>
+          Randomize Scale, Width & Rotation
+        </button>
       </div>
     </div>
   );
@@ -184,12 +188,13 @@ const styles = {
   },
   buttonGroup: {
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    gap: '10px',
     marginTop: '20px',
   },
   button: {
-    padding: '10px 20px',
-    fontSize: '16px',
+    padding: '10px 15px',
+    fontSize: '14px',
     backgroundColor: '#2458d4',
     color: 'white',
     border: 'none',

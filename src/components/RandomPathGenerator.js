@@ -191,9 +191,16 @@ const RandomPathGenerator = () => {
     }
   }, [generateFluidPathMesh]);
 
+  const randomizeScaleLineWidthRotation = () => {
+    setScale(Math.random() * 0.8 + 0.5); // Random scale between 0.5 and 1.3
+    setLineWidth(Math.random() * 0.3 + 0.05); // Random line width between 0.05 and 0.35
+    setRotation(Math.random() * 360); // Random rotation between 0 and 360 degrees
+  };
+
   const randomizeAll = () => {
     setRandomSeed(Math.random());
     setSelectedGradient(getRandomGradient().name);
+    randomizeScaleLineWidthRotation();
   };
 
   return (
@@ -221,6 +228,7 @@ const RandomPathGenerator = () => {
           gradientNames={getAllGradientNames()}
           onRandomize={randomizeAll}
           onRegenerate={generateFluidPathMesh}
+          onRandomizeScaleLineWidthRotation={randomizeScaleLineWidthRotation}
         />
       </div>
     </div>
